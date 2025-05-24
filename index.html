@@ -256,6 +256,20 @@
 
             <div id="deploy" class="tab-content">
                 <div class="info-box">
+                    <h3>📡 订阅链接使用方法</h3>
+                    <ol style="padding-left: 20px;">
+                        <li>转换完成后，复制生成的订阅链接</li>
+                        <li>打开Clash客户端</li>
+                        <li>在配置管理中选择"通过URL下载"</li>
+                        <li>粘贴订阅链接并保存</li>
+                        <li>选择新添加的配置文件</li>
+                    </ol>
+                    <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                        💡 订阅链接包含完整的配置信息，可以直接导入任何支持的Clash客户端
+                    </p>
+                </div>
+
+                <div class="info-box">
                     <h3>☁️ Cloudflare Workers 部署</h3>
                     <ul>
                         <li>免费额度：每天100,000次请求</li>
@@ -359,8 +373,21 @@
                         <h3>✅ 转换成功！</h3>
                         <p>配置名称: ${result.config.name}</p>
                         <p>节点数量: ${result.config.proxies.length}</p>
-                        <button class="btn copy-btn" onclick="copyToClipboard(\`${result.yaml}\`)">📋 复制 YAML 配置</button>
-                        <textarea class="form-control" style="margin-top: 10px;" readonly>${result.yaml}</textarea>
+                        
+                        <div style="margin: 15px 0; padding: 15px; background: #e8f5e8; border-radius: 8px; border-left: 4px solid #28a745;">
+                            <h4 style="color: #155724; margin-bottom: 10px;">📡 Clash 订阅链接</h4>
+                            <p style="font-size: 12px; color: #155724; margin-bottom: 8px;">复制下方链接，在Clash客户端中添加为订阅链接：</p>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="text" value="${result.subscriptionUrl}" readonly 
+                                       style="flex: 1; padding: 8px; border: 1px solid #28a745; border-radius: 4px; font-size: 12px; background: white;">
+                                <button class="btn copy-btn" onclick="copyToClipboard(\`${result.subscriptionUrl}\`)" style="white-space: nowrap;">📋 复制链接</button>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 15px;">
+                            <button class="btn copy-btn" onclick="copyToClipboard(\`${result.yaml}\`)">📋 复制 YAML 配置</button>
+                            <textarea class="form-control" style="margin-top: 10px;" readonly rows="8">${result.yaml}</textarea>
+                        </div>
                     `, 'success');
                 } else {
                     showResult('❌ ' + result.error, 'error');

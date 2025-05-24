@@ -26,6 +26,33 @@ async function handleRequest(request) {
     })
   }
   
+  // 处理配置文件下载
+  if (request.method === 'GET' && url.pathname.startsWith('/clash/')) {
+    try {
+      // 从URL路径中提取配置数据
+      const configId = url.pathname.split('/clash/')[1]
+      if (!configId) {
+        return new Response('配置ID无效', { status: 400 })
+      }
+      
+      // 解码配置内容
+      const yamlContent = atob(decodeURIComponent(configId))
+      
+      return new Response(yamlContent, {
+        headers: {
+          'Content-Type': 'text/yaml; charset=utf-8',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'Access-Control-Allow-Origin': '*',
+          'Profile-Update-Interval': '24'
+        }
+      })
+    } catch (error) {
+      return new Response('配置解析失败', { status: 400 })
+    }
+  }
+  
   // 处理订阅转换
   if (request.method === 'POST' && url.pathname === '/convert') {
     try {
@@ -76,11 +103,18 @@ async function handleRequest(request) {
       
       // 转换为Clash配置
       const clashConfig = await convertToClash(servers, configName || 'My Clash Config')
+      const yamlContent = generateClashYAML(clashConfig)
+      
+      // 生成订阅链接
+      const encodedConfig = encodeURIComponent(btoa(yamlContent))
+      const subscriptionLink = `${url.origin}/clash/${encodedConfig}`
       
       return new Response(JSON.stringify({ 
         success: true, 
         config: clashConfig,
-        yaml: generateClashYAML(clashConfig)
+        yaml: yamlContent,
+        subscriptionUrl: subscriptionLink,
+        message: '配置转换成功！可以直接使用订阅链接导入Clash客户端'
       }), {
         headers: {
           'Content-Type': 'application/json',
