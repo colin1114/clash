@@ -109,15 +109,29 @@ async function convertToClash(servers, configName) {
         proxy = parseShadowsocks(server)
       } else if (server.startsWith('trojan://')) {
         proxy = parseTrojan(server)
+      } else if (server.startsWith('vless://')) {
+        // 暂时跳过不支持的协议
+        console.log('暂不支持VLESS协议:', server.substring(0, 50) + '...')
+        continue
+      } else {
+        console.log('未识别的协议:', server.substring(0, 50) + '...')
+        continue
       }
       
-      if (proxy) {
+      if (proxy && proxy.name && proxy.server) {
         proxies.push(proxy)
         proxyNames.push(proxy.name)
+        console.log('成功解析节点:', proxy.name)
+      } else {
+        console.log('节点解析失败:', server.substring(0, 50) + '...')
       }
     } catch (e) {
-      console.error('解析服务器失败:', e)
+      console.error('解析服务器失败:', e.message, 'URL:', server.substring(0, 50) + '...')
     }
+  }
+  
+  if (proxies.length === 0) {
+    throw new Error('没有成功解析到任何有效的代理节点，请检查订阅链接格式')
   }
   
   return {
@@ -149,7 +163,7 @@ async function convertToClash(servers, configName) {
       'IP-CIDR,192.168.0.0/16,DIRECT',
       'IP-CIDR,10.0.0.0/8,DIRECT',
       'GEOIP,CN,🎯 全球直连',
-      'MATCH,🚀 节点选择'
+      'MATCH,�� 节点选择'
     ]
   }
 }
@@ -172,17 +186,51 @@ function parseVmess(vmessUrl) {
 }
 
 function parseShadowsocks(ssUrl) {
-  const url = new URL(ssUrl)
-  const userinfo = atob(url.username)
-  const [method, password] = userinfo.includes(':') ? userinfo.split(':') : [userinfo, '']
-  
-  return {
-    name: decodeURIComponent(url.hash.slice(1)) || `${url.hostname}:${url.port}`,
-    type: 'ss',
-    server: url.hostname,
-    port: parseInt(url.port),
-    cipher: method,
-    password: password || url.password
+  try {
+    const url = new URL(ssUrl)
+    let method, password
+    
+    // 处理Base64编码的用户信息
+    try {
+      const userinfo = atob(url.username)
+      if (userinfo.includes(':')) {
+        [method, password] = userinfo.split(':')
+      } else {
+        // 某些格式可能只有password，method在其他地方
+        method = 'aes-256-gcm' // 默认加密方法
+        password = userinfo
+      }
+    } catch (e) {
+      // 如果Base64解码失败，尝试直接使用
+      if (url.username.includes(':')) {
+        [method, password] = url.username.split(':')
+      } else {
+        method = 'aes-256-gcm'
+        password = url.username
+      }
+    }
+    
+    // 获取节点名称，处理URL编码
+    let nodeName = ''
+    if (url.hash) {
+      try {
+        nodeName = decodeURIComponent(url.hash.slice(1))
+      } catch (e) {
+        nodeName = url.hash.slice(1)
+      }
+    }
+    
+    return {
+      name: nodeName || `${url.hostname}:${url.port}`,
+      type: 'ss',
+      server: url.hostname,
+      port: parseInt(url.port),
+      cipher: method,
+      password: password
+    }
+  } catch (error) {
+    console.error('解析Shadowsocks链接失败:', error)
+    return null
   }
 }
 
