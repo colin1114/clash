@@ -45,9 +45,23 @@ async function handleRequest(request) {
       const response = await fetch(subscriptionUrl)
       const subscriptionData = await response.text()
       
-      // 解码base64
-      const decodedData = atob(subscriptionData)
-      const servers = decodedData.split('\n').filter(line => line.trim())
+      // 智能处理订阅格式
+      let servers = []
+      
+      // 尝试判断是否为Base64编码的订阅
+      try {
+        // 检查是否是Base64编码（没有协议前缀的情况）
+        if (!subscriptionData.includes('://') && subscriptionData.length > 20) {
+          const decodedData = atob(subscriptionData.trim())
+          servers = decodedData.split('\n').filter(line => line.trim())
+        } else {
+          // 直接是多行代理链接格式
+          servers = subscriptionData.split('\n').filter(line => line.trim())
+        }
+      } catch (e) {
+        // Base64解码失败，按普通文本处理
+        servers = subscriptionData.split('\n').filter(line => line.trim())
+      }
       
       // 转换为Clash配置
       const clashConfig = await convertToClash(servers, configName || 'My Clash Config')
