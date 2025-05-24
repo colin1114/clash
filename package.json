@@ -1,0 +1,31 @@
+{
+  "name": "clash-subscription-converter",
+  "version": "1.0.0",
+  "description": "一个美观且功能强大的在线工具，用于将各种代理订阅链接转换为 Clash 配置格式",
+  "main": "worker.js",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "python -m http.server 8000",
+    "preview": "npx serve ."
+  },
+  "keywords": [
+    "clash",
+    "subscription",
+    "converter",
+    "proxy",
+    "v2ray",
+    "shadowsocks",
+    "trojan",
+    "cloudflare-workers"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "homepage": "https://github.com/yourusername/clash-subscription-converter",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/clash-subscription-converter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/clash-subscription-converter/issues"
+  }
+} 

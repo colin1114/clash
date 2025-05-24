@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clash 订阅转换器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px 0;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-block {
+            width: 100%;
+            text-align: center;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .copy-btn {
+            background: #28a745;
+            margin-top: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #218838;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left-color: #dc3545;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border-left-color: #28a745;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 5px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .info-box h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            padding-left: 20px;
+        }
+
+        .info-box li {
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Clash 订阅转换器</h1>
+            <p>轻松将各种订阅链接转换为 Clash 配置文件</p>
+        </div>
+
+        <div class="card">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('convert')">订阅转换</button>
+                <button class="tab" onclick="switchTab('deploy')">部署指南</button>
+            </div>
+
+            <div id="convert" class="tab-content active">
+                <div class="info-box">
+                    <h3>📋 支持的订阅类型</h3>
+                    <ul>
+                        <li>V2Ray 订阅链接</li>
+                        <li>Shadowsocks 订阅链接</li>
+                        <li>Trojan 订阅链接</li>
+                        <li>Mixed 混合订阅</li>
+                    </ul>
+                </div>
+
+                <form id="convertForm">
+                    <div class="form-group">
+                        <label for="subscriptionUrl">订阅链接</label>
+                        <input type="url" class="form-control" id="subscriptionUrl" 
+                               placeholder="请输入您的订阅链接，例如: https://example.com/subscribe">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="configName">配置名称（可选）</label>
+                        <input type="text" class="form-control" id="configName" 
+                               placeholder="我的 Clash 配置" value="My Clash Config">
+                    </div>
+
+                    <button type="submit" class="btn btn-block">🔄 转换订阅</button>
+                </form>
+
+                <div id="result" style="display: none;"></div>
+            </div>
+
+            <div id="deploy" class="tab-content">
+                <div class="info-box">
+                    <h3>☁️ Cloudflare Workers 部署</h3>
+                    <ul>
+                        <li>免费额度：每天100,000次请求</li>
+                        <li>全球CDN加速</li>
+                        <li>自动HTTPS</li>
+                        <li>简单易用</li>
+                    </ul>
+                </div>
+
+                <div class="form-group">
+                    <label>部署步骤：</label>
+                    <textarea class="form-control" readonly>1. 访问 https://workers.cloudflare.com/
+2. 注册/登录 Cloudflare 账户
+3. 创建新的 Worker
+4. 将 worker.js 中的代码复制粘贴到编辑器中
+5. 点击 "Save and Deploy"
+6. 获取您的 Worker URL</textarea>
+                </div>
+
+                <button class="btn btn-block" onclick="copyWorkerCode()">📋 复制 Worker 代码</button>
+
+                <div class="info-box" style="margin-top: 20px;">
+                    <h3>📖 使用方法</h3>
+                    <p>部署完成后，访问您的 Worker URL 即可使用订阅转换服务！</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // 隐藏所有tab内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 移除所有tab的active类
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示目标tab内容
+            document.getElementById(tabName).classList.add('active');
+            
+            // 添加active类到对应的tab按钮
+            event.target.classList.add('active');
+        }
+
+        function showResult(content, type = 'result') {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = content;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showResult('✅ 已复制到剪贴板！', 'success');
+                setTimeout(() => {
+                    document.getElementById('result').style.display = 'none';
+                }, 3000);
+            }).catch(() => {
+                showResult('❌ 复制失败，请手动复制', 'error');
+            });
+        }
+
+        async function copyWorkerCode() {
+            try {
+                const response = await fetch('worker.js');
+                const workerCode = await response.text();
+                copyToClipboard(workerCode);
+            } catch (error) {
+                showResult('❌ 无法读取 worker.js 文件，请手动复制', 'error');
+            }
+        }
+
+        document.getElementById('convertForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const subscriptionUrl = document.getElementById('subscriptionUrl').value;
+            const configName = document.getElementById('configName').value;
+            
+            if (!subscriptionUrl) {
+                showResult('❌ 请输入订阅链接', 'error');
+                return;
+            }
+            
+            showResult('🔄 正在转换订阅...', 'result');
+            
+            try {
+                const response = await fetch('/convert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subscriptionUrl, configName })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`
+                        <h3>✅ 转换成功！</h3>
+                        <p>配置名称: ${result.config.name}</p>
+                        <p>节点数量: ${result.config.proxies.length}</p>
+                        <button class="btn copy-btn" onclick="copyToClipboard(\`${result.yaml}\`)">📋 复制 YAML 配置</button>
+                        <textarea class="form-control" style="margin-top: 10px;" readonly>${result.yaml}</textarea>
+                    `, 'success');
+                } else {
+                    showResult('❌ ' + result.error, 'error');
+                }
+            } catch (error) {
+                // 如果是在本地环境，显示示例结果
+                const sampleYAML = `# Clash 配置文件
+# 配置名称: ${configName}
+# 生成时间: ${new Date().toISOString()}
+
+port: 7890
+socks-port: 7891
+allow-lan: true
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+
+dns:
+  enable: true
+  listen: 0.0.0.0:53
+  enhanced-mode: fake-ip
+  nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+    - 8.8.8.8
+
+proxies:
+  - name: "示例节点1"
+    type: vmess
+    server: example1.com
+    port: 443
+    uuid: 12345678-1234-1234-1234-123456789abc
+    alterId: 0
+    cipher: auto
+    network: ws
+    tls: true
+
+proxy-groups:
+  - name: "🚀 节点选择"
+    type: select
+    proxies:
+      - "♻️ 自动选择"
+      - "🎯 全球直连"
+      - "示例节点1"
+  - name: "♻️ 自动选择"
+    type: url-test
+    proxies:
+      - "示例节点1"
+    url: "http://www.gstatic.com/generate_204"
+    interval: 300
+  - name: "🎯 全球直连"
+    type: select
+    proxies:
+      - DIRECT
+
+rules:
+  - DOMAIN-SUFFIX,local,DIRECT
+  - IP-CIDR,127.0.0.0/8,DIRECT
+  - IP-CIDR,172.16.0.0/12,DIRECT
+  - IP-CIDR,192.168.0.0/16,DIRECT
+  - IP-CIDR,10.0.0.0/8,DIRECT
+  - GEOIP,CN,🎯 全球直连
+  - MATCH,🚀 节点选择`;
+
+                showResult(`
+                    <h3>✅ 转换成功！（示例）</h3>
+                    <p>配置名称: ${configName}</p>
+                    <p>⚠️ 这是示例输出，部署到 Cloudflare Workers 后将显示真实转换结果</p>
+                    <button class="btn copy-btn" onclick="copyToClipboard(\`${sampleYAML}\`)">📋 复制 YAML 配置</button>
+                    <textarea class="form-control" style="margin-top: 10px;" readonly>${sampleYAML}</textarea>
+                `, 'success');
+            }
+        });
+    </script>
+</body>
+</html> 
