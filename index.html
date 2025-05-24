@@ -256,17 +256,44 @@
 
             <div id="deploy" class="tab-content">
                 <div class="info-box">
-                    <h3>📡 订阅链接使用方法</h3>
-                    <ol style="padding-left: 20px;">
-                        <li>转换完成后，复制生成的订阅链接</li>
-                        <li>打开Clash客户端</li>
-                        <li>在配置管理中选择"通过URL下载"</li>
-                        <li>粘贴订阅链接并保存</li>
-                        <li>选择新添加的配置文件</li>
+                    <h3>🎯 YAML配置文件使用方法</h3>
+                    <ol style="padding-left: 20px; line-height: 1.6;">
+                        <li><strong>订阅链接方式（推荐）</strong>
+                            <ul style="margin-top: 5px; padding-left: 20px;">
+                                <li>复制生成的订阅链接</li>
+                                <li>在Clash客户端中选择"从URL添加配置"</li>
+                                <li>粘贴链接并保存，支持自动更新</li>
+                            </ul>
+                        </li>
+                        <li><strong>直接下载方式</strong>
+                            <ul style="margin-top: 5px; padding-left: 20px;">
+                                <li>点击"下载YAML"按钮下载配置文件</li>
+                                <li>将下载的.yaml文件导入Clash客户端</li>
+                                <li>适用于不支持订阅链接的客户端</li>
+                            </ul>
+                        </li>
+                        <li><strong>在线查看方式</strong>
+                            <ul style="margin-top: 5px; padding-left: 20px;">
+                                <li>点击"在线查看"可直接在浏览器中查看配置</li>
+                                <li>便于检查配置内容和节点信息</li>
+                                <li>可以复制特定部分的配置</li>
+                            </ul>
+                        </li>
                     </ol>
-                    <p style="margin-top: 10px; font-size: 14px; color: #666;">
-                        💡 订阅链接包含完整的配置信息，可以直接导入任何支持的Clash客户端
+                    <p style="margin-top: 15px; font-size: 14px; color: #666; background: #f8f9fa; padding: 10px; border-radius: 6px;">
+                        💡 <strong>提示:</strong> 订阅链接会生成永久可访问的YAML配置文件，链接包含完整的Base64编码配置数据，无需担心链接失效。
                     </p>
+                </div>
+
+                <div class="info-box">
+                    <h3>📡 支持的Clash客户端</h3>
+                    <ul style="line-height: 1.6;">
+                        <li><strong>Windows:</strong> Clash for Windows (CFW)</li>
+                        <li><strong>macOS:</strong> ClashX, ClashX Pro</li>
+                        <li><strong>Android:</strong> Clash for Android</li>
+                        <li><strong>iOS:</strong> Shadowrocket, Quantumult X</li>
+                        <li><strong>Linux:</strong> Clash Premium</li>
+                    </ul>
                 </div>
 
                 <div class="info-box">
@@ -326,14 +353,52 @@
         }
 
         function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                showResult('✅ 已复制到剪贴板！', 'success');
-                setTimeout(() => {
-                    document.getElementById('result').style.display = 'none';
-                }, 3000);
-            }).catch(() => {
-                showResult('❌ 复制失败，请手动复制', 'error');
-            });
+            // 创建临时textarea元素作为后备方案
+            const fallbackCopy = (text) => {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    return successful;
+                } catch (err) {
+                    document.body.removeChild(textArea);
+                    return false;
+                }
+            };
+
+            // 优先使用现代的Clipboard API
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showResult('✅ 已复制到剪贴板！', 'success');
+                    setTimeout(() => {
+                        document.getElementById('result').style.display = 'none';
+                    }, 3000);
+                }).catch(() => {
+                    // 如果Clipboard API失败，使用后备方案
+                    if (fallbackCopy(text)) {
+                        showResult('✅ 已复制到剪贴板！', 'success');
+                    } else {
+                        showResult('❌ 复制失败，请手动复制', 'error');
+                    }
+                });
+            } else {
+                // 浏览器不支持Clipboard API，使用后备方案
+                if (fallbackCopy(text)) {
+                    showResult('✅ 已复制到剪贴板！', 'success');
+                    setTimeout(() => {
+                        document.getElementById('result').style.display = 'none';
+                    }, 3000);
+                } else {
+                    showResult('❌ 复制失败，请手动复制', 'error');
+                }
+            }
         }
 
         async function copyWorkerCode() {
@@ -371,22 +436,41 @@
                 if (result.success) {
                     showResult(`
                         <h3>✅ 转换成功！</h3>
-                        <p>配置名称: ${result.config.name}</p>
-                        <p>节点数量: ${result.config.proxies.length}</p>
+                        <p><strong>配置名称:</strong> ${result.config.name}</p>
+                        <p><strong>节点数量:</strong> ${result.config.proxies.length}</p>
                         
-                        <div style="margin: 15px 0; padding: 15px; background: #e8f5e8; border-radius: 8px; border-left: 4px solid #28a745;">
-                            <h4 style="color: #155724; margin-bottom: 10px;">📡 Clash 订阅链接</h4>
-                            <p style="font-size: 12px; color: #155724; margin-bottom: 8px;">复制下方链接，在Clash客户端中添加为订阅链接：</p>
-                            <div style="display: flex; gap: 10px; align-items: center;">
-                                <input type="text" value="${result.subscriptionUrl}" readonly 
-                                       style="flex: 1; padding: 8px; border: 1px solid #28a745; border-radius: 4px; font-size: 12px; background: white;">
-                                <button class="btn copy-btn" onclick="copyToClipboard(\`${result.subscriptionUrl}\`)" style="white-space: nowrap;">📋 复制链接</button>
+                        <div style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%); border-radius: 12px; border: 2px solid #28a745;">
+                            <h4 style="color: #155724; margin-bottom: 15px; font-size: 18px;">🌐 在线YAML配置文件</h4>
+                            <p style="font-size: 14px; color: #155724; margin-bottom: 12px; line-height: 1.5;">
+                                <strong>📡 订阅链接:</strong> 复制下方链接，在Clash客户端中添加订阅<br>
+                                <strong>🔗 直接访问:</strong> 点击链接可直接查看或下载YAML配置文件
+                            </p>
+                            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                                <input type="text" value="${result.subscriptionUrl}" readonly id="subscriptionLink"
+                                       style="flex: 1; padding: 10px; border: 2px solid #28a745; border-radius: 6px; font-size: 12px; background: white; font-family: monospace;">
+                                <button class="btn copy-btn" onclick="copyToClipboard(document.getElementById('subscriptionLink').value)" style="white-space: nowrap;">📋 复制订阅</button>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <a href="${result.subscriptionUrl}" target="_blank" class="btn" style="background: #17a2b8; text-decoration: none; font-size: 13px;">🔗 在线查看</a>
+                                <a href="${result.downloadUrl || result.subscriptionUrl + '?download=true'}" target="_blank" class="btn" style="background: #6f42c1; text-decoration: none; font-size: 13px;">💾 下载YAML</a>
+                                ${result.yamlUrl ? `<a href="${result.yamlUrl}" target="_blank" class="btn" style="background: #fd7e14; text-decoration: none; font-size: 13px;">⚡ 快速下载</a>` : ''}
+                                <button class="btn copy-btn" onclick="copyToClipboard('${result.subscriptionUrl}')" style="font-size: 13px;">📋 复制链接</button>
                             </div>
                         </div>
                         
-                        <div style="margin-top: 15px;">
-                            <button class="btn copy-btn" onclick="copyToClipboard(\`${result.yaml}\`)">📋 复制 YAML 配置</button>
-                            <textarea class="form-control" style="margin-top: 10px;" readonly rows="8">${result.yaml}</textarea>
+                        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea;">
+                            <h4 style="color: #495057; margin-bottom: 10px;">📋 YAML配置内容</h4>
+                            <button class="btn copy-btn" onclick="copyToClipboard(document.getElementById('yamlContent').value)" style="margin-bottom: 10px;">📋 复制完整YAML</button>
+                            <textarea class="form-control" id="yamlContent" readonly rows="12" style="font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4;">${result.yaml}</textarea>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                            <p style="margin: 0; font-size: 13px; color: #856404;">
+                                <strong>💡 使用提示:</strong> 
+                                1. 优先使用订阅链接，支持自动更新 
+                                2. 可以直接在浏览器中访问YAML链接查看配置 
+                                3. 下载的文件可直接导入Clash客户端
+                            </p>
                         </div>
                     `, 'success');
                 } else {
@@ -415,15 +499,12 @@ dns:
     - 8.8.8.8
 
 proxies:
-  - name: "示例节点1"
-    type: vmess
-    server: example1.com
-    port: 443
-    uuid: 12345678-1234-1234-1234-123456789abc
-    alterId: 0
-    cipher: auto
-    network: ws
-    tls: true
+  - name: "香港03-广移中转A-优惠倍率*10"
+    type: ss
+    server: e9vm2tgj.8542112.xyz
+    port: 53555
+    cipher: aes-128-gcm
+    password: e7e61339-7cfa-4b0c-98b5-ac325c26d84e
 
 proxy-groups:
   - name: "🚀 节点选择"
@@ -431,11 +512,11 @@ proxy-groups:
     proxies:
       - "♻️ 自动选择"
       - "🎯 全球直连"
-      - "示例节点1"
+      - "香港03-广移中转A-优惠倍率*10"
   - name: "♻️ 自动选择"
     type: url-test
     proxies:
-      - "示例节点1"
+      - "香港03-广移中转A-优惠倍率*10"
     url: "http://www.gstatic.com/generate_204"
     interval: 300
   - name: "🎯 全球直连"
@@ -452,12 +533,53 @@ rules:
   - GEOIP,CN,🎯 全球直连
   - MATCH,🚀 节点选择`;
 
+                // 生成示例链接
+                const sampleSubscriptionUrl = `${window.location.origin}/clash/example-config-id-12345`;
+                const sampleDownloadUrl = `${sampleSubscriptionUrl}?download=true`;
+                const sampleYamlUrl = `${window.location.origin}/yaml/example-config-id-12345`;
+
                 showResult(`
-                    <h3>✅ 转换成功！（示例）</h3>
-                    <p>配置名称: ${configName}</p>
-                    <p>⚠️ 这是示例输出，部署到 Cloudflare Workers 后将显示真实转换结果</p>
-                    <button class="btn copy-btn" onclick="copyToClipboard(\`${sampleYAML}\`)">📋 复制 YAML 配置</button>
-                    <textarea class="form-control" style="margin-top: 10px;" readonly>${sampleYAML}</textarea>
+                    <h3>✅ 转换成功！（本地示例）</h3>
+                    <p><strong>配置名称:</strong> ${configName}</p>
+                    <p><strong>节点数量:</strong> 1</p>
+                    <p style="color: #fd7e14; font-weight: bold;">⚠️ 这是本地示例输出，部署到 Cloudflare Workers 后将显示真实转换结果</p>
+                    
+                    <div style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%); border-radius: 12px; border: 2px solid #28a745;">
+                        <h4 style="color: #155724; margin-bottom: 15px; font-size: 18px;">🌐 在线YAML配置文件（示例）</h4>
+                        <p style="font-size: 14px; color: #155724; margin-bottom: 12px; line-height: 1.5;">
+                            <strong>📡 订阅链接:</strong> 复制下方链接，在Clash客户端中添加订阅<br>
+                            <strong>🔗 直接访问:</strong> 点击链接可直接查看或下载YAML配置文件
+                        </p>
+                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                            <input type="text" value="${sampleSubscriptionUrl}" readonly id="sampleSubscriptionLink"
+                                   style="flex: 1; padding: 10px; border: 2px solid #28a745; border-radius: 6px; font-size: 12px; background: white; font-family: monospace;">
+                            <button class="btn copy-btn" onclick="copyToClipboard(document.getElementById('sampleSubscriptionLink').value)" style="white-space: nowrap;">📋 复制订阅</button>
+                        </div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <a href="${sampleSubscriptionUrl}" target="_blank" class="btn" style="background: #17a2b8; text-decoration: none; font-size: 13px;">🔗 在线查看</a>
+                            <a href="${sampleDownloadUrl}" target="_blank" class="btn" style="background: #6f42c1; text-decoration: none; font-size: 13px;">💾 下载YAML</a>
+                            <a href="${sampleYamlUrl}" target="_blank" class="btn" style="background: #fd7e14; text-decoration: none; font-size: 13px;">⚡ 快速下载</a>
+                            <button class="btn copy-btn" onclick="copyToClipboard('${sampleSubscriptionUrl}')" style="font-size: 13px;">📋 复制链接</button>
+                        </div>
+                        <p style="margin-top: 10px; font-size: 12px; color: #856404; background: #fff3cd; padding: 8px; border-radius: 4px;">
+                            💡 <strong>注意:</strong> 在本地环境下，这些链接是示例链接，部署到Cloudflare Workers后会生成真实可用的链接
+                        </p>
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea;">
+                        <h4 style="color: #495057; margin-bottom: 10px;">📋 YAML配置内容</h4>
+                        <button class="btn copy-btn" onclick="copyToClipboard(document.getElementById('sampleYamlContent').value)" style="margin-bottom: 10px;">📋 复制完整YAML</button>
+                        <textarea class="form-control" id="sampleYamlContent" readonly rows="12" style="font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4;">${sampleYAML}</textarea>
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                        <p style="margin: 0; font-size: 13px; color: #856404;">
+                            <strong>💡 使用提示:</strong> 
+                            1. 优先使用订阅链接，支持自动更新 
+                            2. 可以直接在浏览器中访问YAML链接查看配置 
+                            3. 下载的文件可直接导入Clash客户端
+                        </p>
+                    </div>
                 `, 'success');
             }
         });

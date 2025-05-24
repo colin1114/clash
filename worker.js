@@ -53,7 +53,52 @@ async function handleRequest(request) {
       // 从URL路径中提取配置数据
       const configId = url.pathname.split('/clash/')[1]
       if (!configId) {
-        return new Response('配置ID无效', { status: 400 })
+        return new Response('配置ID无效', { 
+          status: 400,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        })
+      }
+      
+      // 解码配置内容
+      const yamlContent = base64ToUtf8(decodeURIComponent(configId))
+      
+      // 检查是否请求下载
+      const downloadParam = url.searchParams.get('download')
+      const isDownload = downloadParam === 'true' || request.headers.get('user-agent')?.includes('clash')
+      
+      const headers = {
+        'Content-Type': 'text/yaml; charset=utf-8',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Profile-Update-Interval': '24'
+      }
+      
+      // 如果是下载请求或Clash客户端访问，添加Content-Disposition头
+      if (isDownload) {
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')
+        headers['Content-Disposition'] = `attachment; filename="clash-config-${timestamp}.yaml"`
+      }
+      
+      return new Response(yamlContent, { headers })
+    } catch (error) {
+      return new Response('配置解析失败: ' + error.message, { 
+        status: 400,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+      })
+    }
+  }
+  
+  // 添加简化的YAML访问路由 /yaml/{config-id}
+  if (request.method === 'GET' && url.pathname.startsWith('/yaml/')) {
+    try {
+      const configId = url.pathname.split('/yaml/')[1]
+      if (!configId) {
+        return new Response('配置ID无效', { 
+          status: 400,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        })
       }
       
       // 解码配置内容
@@ -62,15 +107,19 @@ async function handleRequest(request) {
       return new Response(yamlContent, {
         headers: {
           'Content-Type': 'text/yaml; charset=utf-8',
+          'Access-Control-Allow-Origin': '*',
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0',
-          'Access-Control-Allow-Origin': '*',
-          'Profile-Update-Interval': '24'
+          'Profile-Update-Interval': '24',
+          'Content-Disposition': 'attachment; filename="clash-config.yaml"'
         }
       })
     } catch (error) {
-      return new Response('配置解析失败', { status: 400 })
+      return new Response('配置解析失败: ' + error.message, { 
+        status: 400,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+      })
     }
   }
   
@@ -135,12 +184,15 @@ async function handleRequest(request) {
       // 生成订阅链接
       const encodedConfig = encodeURIComponent(utf8ToBase64(yamlContent))
       const subscriptionLink = `${url.origin}/clash/${encodedConfig}`
+      const yamlDownloadLink = `${url.origin}/yaml/${encodedConfig}`
       
       return new Response(JSON.stringify({ 
         success: true, 
         config: clashConfig,
         yaml: yamlContent,
         subscriptionUrl: subscriptionLink,
+        yamlUrl: yamlDownloadLink,
+        downloadUrl: `${subscriptionLink}?download=true`,
         message: '配置转换成功！可以直接使用订阅链接导入Clash客户端'
       }), {
         headers: {
