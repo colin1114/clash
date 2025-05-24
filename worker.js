@@ -32,7 +32,7 @@ async function handleRequest(request) {
       const { subscriptionUrl, configName } = await request.json()
       
       if (!subscriptionUrl) {
-        return new Response(JSON.stringify({ error: '请提供订阅链接' }), {
+        return new Response(JSON.stringify({ error: '请提供订阅链接或代理链接' }), {
           status: 400,
           headers: {
             'Content-Type': 'application/json',
@@ -41,9 +41,20 @@ async function handleRequest(request) {
         })
       }
       
-      // 获取订阅内容
-      const response = await fetch(subscriptionUrl)
-      const subscriptionData = await response.text()
+      let subscriptionData = ''
+      
+      // 判断输入类型：是URL还是直接的代理链接
+      if (subscriptionUrl.startsWith('http://') || subscriptionUrl.startsWith('https://')) {
+        // 是订阅链接URL，需要fetch获取内容
+        const response = await fetch(subscriptionUrl)
+        subscriptionData = await response.text()
+      } else if (subscriptionUrl.includes('://')) {
+        // 直接是代理链接内容（包含协议前缀）
+        subscriptionData = subscriptionUrl
+      } else {
+        // 可能是Base64编码的内容
+        subscriptionData = subscriptionUrl
+      }
       
       // 智能处理订阅格式
       let servers = []
@@ -163,7 +174,7 @@ async function convertToClash(servers, configName) {
       'IP-CIDR,192.168.0.0/16,DIRECT',
       'IP-CIDR,10.0.0.0/8,DIRECT',
       'GEOIP,CN,🎯 全球直连',
-      'MATCH,�� 节点选择'
+      'MATCH,🚀 节点选择'
     ]
   }
 }

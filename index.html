@@ -219,24 +219,27 @@
 
             <div id="convert" class="tab-content active">
                 <div class="info-box">
-                    <h3>📋 支持的订阅类型</h3>
+                    <h3>📋 支持的输入格式</h3>
                     <ul>
-                        <li>V2Ray 订阅链接（vmess://）</li>
-                        <li>Shadowsocks 订阅链接（ss://）</li>
-                        <li>Trojan 订阅链接（trojan://）</li>
-                        <li>Base64 编码的传统订阅</li>
-                        <li>多行代理链接格式</li>
+                        <li><strong>订阅链接</strong>：HTTP/HTTPS链接指向订阅文件</li>
+                        <li><strong>代理链接</strong>：直接粘贴ss://、vmess://、trojan://链接</li>
+                        <li><strong>Base64订阅</strong>：传统Base64编码格式</li>
                     </ul>
                     <p style="margin-top: 10px; font-size: 14px; color: #666;">
-                        💡 支持直接粘贴多行代理链接，每行一个节点
+                        💡 <strong>使用提示</strong>：可以直接在上方文本框中粘贴多行代理链接，每行一个节点
                     </p>
                 </div>
 
                 <form id="convertForm">
                     <div class="form-group">
-                        <label for="subscriptionUrl">订阅链接</label>
-                        <input type="url" class="form-control" id="subscriptionUrl" 
-                               placeholder="请输入您的订阅链接，例如: https://example.com/subscribe">
+                        <label for="subscriptionUrl">订阅链接或代理链接</label>
+                        <textarea class="form-control" id="subscriptionUrl" rows="6"
+                               placeholder="支持以下格式：
+1. HTTP/HTTPS 订阅链接：https://example.com/subscribe
+2. 直接粘贴代理链接（每行一个）：
+   ss://YWVzLTEyOC1nY206...@server:port#节点名
+   vmess://eyJ2IjoiMiIs...
+   trojan://password@server:port#节点名"></textarea>
                     </div>
 
                     <div class="form-group">
@@ -332,11 +335,11 @@
         document.getElementById('convertForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const subscriptionUrl = document.getElementById('subscriptionUrl').value;
+            const subscriptionUrl = document.getElementById('subscriptionUrl').value.trim();
             const configName = document.getElementById('configName').value;
             
             if (!subscriptionUrl) {
-                showResult('❌ 请输入订阅链接', 'error');
+                showResult('❌ 请输入订阅链接或直接粘贴代理链接', 'error');
                 return;
             }
             
