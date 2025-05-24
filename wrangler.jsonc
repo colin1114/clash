@@ -1,0 +1,5 @@
+{
+  "name": "clash-subscription-converter",
+  "compatibility_date": "2025-05-24",
+  "main": "worker.js"
+} 

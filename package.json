@@ -6,7 +6,10 @@
   "scripts": {
     "start": "npx serve .",
     "dev": "python -m http.server 8000",
-    "preview": "npx serve ."
+    "preview": "npx serve .",
+    "deploy:worker": "npx wrangler deploy",
+    "deploy:pages": "npx wrangler pages deploy . --project-name=clash-subscription-converter",
+    "build": "echo 'No build step required for static site'"
   },
   "keywords": [
     "clash",

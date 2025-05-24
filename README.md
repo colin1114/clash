@@ -16,9 +16,15 @@
 
 ```
 clash/
-├── index.html          # 前端页面
-├── worker.js           # Cloudflare Worker 后端代码
-└── README.md          # 项目说明文档
+├── index.html              # 前端页面
+├── worker.js               # Cloudflare Worker 后端代码
+├── wrangler.jsonc          # Wrangler 配置文件
+├── _headers                # Cloudflare Pages HTTP头配置
+├── .github/
+│   └── workflows/
+│       └── deploy.yml      # GitHub Actions 部署配置
+├── README.md              # 项目说明文档
+└── package.json           # 项目配置文件
 ```
 
 ## 🚀 快速开始
@@ -54,28 +60,48 @@ clash/
 4. 将 `worker.js` 中的代码完整复制到编辑器中
 5. 点击 "Save and Deploy"
 
-#### 步骤2：配置域名（可选）
+#### 步骤2：使用 Wrangler CLI 部署
+
+```bash
+# 安装 Wrangler CLI
+npm install -g wrangler
+
+# 登录到 Cloudflare
+wrangler login
+
+# 部署 Worker
+npm run deploy:worker
+```
+
+#### 步骤3：配置域名（可选）
 
 1. 在 Worker 设置中添加自定义域名
 2. 或使用 Cloudflare 提供的默认域名
 
-#### 步骤3：测试服务
-
-- 访问你的 Worker URL
-- 测试订阅转换功能
-
 ### 方法三：Cloudflare Pages 部署
 
-1. **GitHub 集成**
+#### 选项A：GitHub 集成（推荐）
+
+1. **准备仓库**
    - 将代码推送到 GitHub 仓库
-   - 在 Cloudflare Pages 中连接该仓库
+   - 确保包含所有必要文件
 
-2. **构建设置**
-   - 构建命令：留空
-   - 构建输出目录：`/`
+2. **创建 Pages 项目**
+   - 访问 [Cloudflare Pages](https://pages.cloudflare.com/)
+   - 连接你的 GitHub 仓库
+   - 选择项目仓库
 
-3. **环境变量**
-   - 无需特殊环境变量
+3. **构建设置**
+   - 构建命令：留空或 `echo "No build required"`
+   - 构建输出目录：`/`（根目录）
+   - 环境变量：无需设置
+
+#### 选项B：直接上传
+
+```bash
+# 使用 Wrangler Pages 部署
+npm run deploy:pages
+```
 
 ## 🛠️ 技术架构
 
@@ -131,6 +157,34 @@ clash/
   - 本地地址直连
   - 国内 IP 直连
   - 其他流量走代理
+
+## 🔧 部署故障排除
+
+### 常见问题
+
+#### 1. Wrangler 找不到入口点
+**错误信息**: `Missing entry-point to Worker script`
+
+**解决方案**: 
+- 确保项目根目录有 `wrangler.jsonc` 文件
+- 检查 `wrangler.jsonc` 中的 `main` 字段指向 `worker.js`
+
+#### 2. GitHub Actions 部署失败
+**解决方案**:
+- 在 GitHub 仓库设置中添加以下 Secrets:
+  - `CLOUDFLARE_API_TOKEN`: Cloudflare API 令牌
+  - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare 账户 ID
+
+#### 3. Pages 构建失败
+**解决方案**:
+- 设置构建命令为空或 `echo "No build required"`
+- 确保构建输出目录设置为 `/`
+
+### 部署配置文件说明
+
+- **`wrangler.jsonc`**: Wrangler CLI 配置，用于 Worker 部署
+- **`_headers`**: Cloudflare Pages HTTP 头配置
+- **`.github/workflows/deploy.yml`**: GitHub Actions 自动部署配置
 
 ## 🔧 自定义配置
 
