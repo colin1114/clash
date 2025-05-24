@@ -1,3 +1,24 @@
+// UTF-8安全的Base64编码函数
+function utf8ToBase64(str) {
+  // 将字符串转换为UTF-8字节，然后进行Base64编码
+  const encoder = new TextEncoder()
+  const data = encoder.encode(str)
+  const binString = Array.from(data, (byte) => String.fromCharCode(byte)).join('')
+  return btoa(binString)
+}
+
+// UTF-8安全的Base64解码函数
+function base64ToUtf8(base64) {
+  // Base64解码，然后转换为UTF-8字符串
+  const binString = atob(base64)
+  const bytes = new Uint8Array(binString.length)
+  for (let i = 0; i < binString.length; i++) {
+    bytes[i] = binString.charCodeAt(i)
+  }
+  const decoder = new TextDecoder()
+  return decoder.decode(bytes)
+}
+
 addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request))
 })
@@ -36,7 +57,7 @@ async function handleRequest(request) {
       }
       
       // 解码配置内容
-      const yamlContent = atob(decodeURIComponent(configId))
+      const yamlContent = base64ToUtf8(decodeURIComponent(configId))
       
       return new Response(yamlContent, {
         headers: {
@@ -90,7 +111,13 @@ async function handleRequest(request) {
       try {
         // 检查是否是Base64编码（没有协议前缀的情况）
         if (!subscriptionData.includes('://') && subscriptionData.length > 20) {
-          const decodedData = atob(subscriptionData.trim())
+          // 尝试使用标准atob，如果失败则使用UTF-8安全解码
+          let decodedData
+          try {
+            decodedData = atob(subscriptionData.trim())
+          } catch (e) {
+            decodedData = base64ToUtf8(subscriptionData.trim())
+          }
           servers = decodedData.split('\n').filter(line => line.trim())
         } else {
           // 直接是多行代理链接格式
@@ -106,7 +133,7 @@ async function handleRequest(request) {
       const yamlContent = generateClashYAML(clashConfig)
       
       // 生成订阅链接
-      const encodedConfig = encodeURIComponent(btoa(yamlContent))
+      const encodedConfig = encodeURIComponent(utf8ToBase64(yamlContent))
       const subscriptionLink = `${url.origin}/clash/${encodedConfig}`
       
       return new Response(JSON.stringify({ 
@@ -214,19 +241,33 @@ async function convertToClash(servers, configName) {
 }
 
 function parseVmess(vmessUrl) {
-  const vmessData = JSON.parse(atob(vmessUrl.slice(8)))
-  return {
-    name: vmessData.ps || `${vmessData.add}:${vmessData.port}`,
-    type: 'vmess',
-    server: vmessData.add,
-    port: parseInt(vmessData.port),
-    uuid: vmessData.id,
-    alterId: parseInt(vmessData.aid || 0),
-    cipher: 'auto',
-    network: vmessData.net || 'tcp',
-    tls: vmessData.tls === 'tls',
-    ...(vmessData.path && { 'ws-opts': { path: vmessData.path } }),
-    ...(vmessData.host && { 'ws-opts': { ...vmessData['ws-opts'], headers: { Host: vmessData.host } } })
+  try {
+    const vmessDataStr = vmessUrl.slice(8) // 移除 "vmess://" 前缀
+    // 尝试使用标准atob，如果失败则使用UTF-8安全解码
+    let jsonStr
+    try {
+      jsonStr = atob(vmessDataStr)
+    } catch (e) {
+      jsonStr = base64ToUtf8(vmessDataStr)
+    }
+    
+    const vmessData = JSON.parse(jsonStr)
+    return {
+      name: vmessData.ps || `${vmessData.add}:${vmessData.port}`,
+      type: 'vmess',
+      server: vmessData.add,
+      port: parseInt(vmessData.port),
+      uuid: vmessData.id,
+      alterId: parseInt(vmessData.aid || 0),
+      cipher: 'auto',
+      network: vmessData.net || 'tcp',
+      tls: vmessData.tls === 'tls',
+      ...(vmessData.path && { 'ws-opts': { path: vmessData.path } }),
+      ...(vmessData.host && { 'ws-opts': { ...vmessData['ws-opts'], headers: { Host: vmessData.host } } })
+    }
+  } catch (error) {
+    console.error('解析VMess链接失败:', error)
+    return null
   }
 }
 
@@ -237,7 +278,14 @@ function parseShadowsocks(ssUrl) {
     
     // 处理Base64编码的用户信息
     try {
-      const userinfo = atob(url.username)
+      // 尝试使用标准atob，如果失败则使用UTF-8安全解码
+      let userinfo
+      try {
+        userinfo = atob(url.username)
+      } catch (e) {
+        userinfo = base64ToUtf8(url.username)
+      }
+      
       if (userinfo.includes(':')) {
         [method, password] = userinfo.split(':')
       } else {
