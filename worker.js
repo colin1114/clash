@@ -19,6 +19,20 @@ function base64ToUtf8(base64) {
   return decoder.decode(bytes)
 }
 
+// 生成短ID的函数
+function generateShortId() {
+  // 生成6位随机字符串，包含字母和数字
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+// 存储配置内容的对象 (内存缓存)
+const configCache = {};
+
 addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request))
 })
@@ -45,6 +59,42 @@ async function handleRequest(request) {
         'Access-Control-Allow-Origin': '*'
       }
     })
+  }
+  
+  // 处理短链接
+  if (request.method === 'GET' && url.pathname.match(/^\/c\/[A-Za-z0-9]{6}$/)) {
+    const shortId = url.pathname.split('/c/')[1]
+    
+    // 从缓存中获取配置
+    const yamlContent = configCache[shortId]
+    
+    if (!yamlContent) {
+      return new Response('配置未找到或已过期', { 
+        status: 404,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+      })
+    }
+    
+    // 检查是否请求下载
+    const downloadParam = url.searchParams.get('download')
+    const isDownload = downloadParam === 'true' || request.headers.get('user-agent')?.includes('clash')
+    
+    const headers = {
+      'Content-Type': 'text/yaml; charset=utf-8',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Profile-Update-Interval': '24'
+    }
+    
+    // 如果是下载请求或Clash客户端访问，添加Content-Disposition头
+    if (isDownload) {
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')
+      headers['Content-Disposition'] = `attachment; filename="clash-config-${timestamp}.yaml"`
+    }
+    
+    return new Response(yamlContent, { headers })
   }
   
   // 处理配置文件下载
@@ -138,50 +188,93 @@ async function handleRequest(request) {
         })
       }
       
-      let subscriptionData = ''
+      // 分割多行输入
+      const subscriptionUrls = subscriptionUrl
+        .split(/[\n\r]+/)  // 同时处理 \n 和 \r\n
+        .map(url => url.trim())
+        .filter(url => url);  // 过滤空行
+      let allServers = []
       
-      // 判断输入类型：是URL还是直接的代理链接
-      if (subscriptionUrl.startsWith('http://') || subscriptionUrl.startsWith('https://')) {
-        // 是订阅链接URL，需要fetch获取内容
-        const response = await fetch(subscriptionUrl)
-        subscriptionData = await response.text()
-      } else if (subscriptionUrl.includes('://')) {
-        // 直接是代理链接内容（包含协议前缀）
-        subscriptionData = subscriptionUrl
-      } else {
-        // 可能是Base64编码的内容
-        subscriptionData = subscriptionUrl
-      }
-      
-      // 智能处理订阅格式
-      let servers = []
-      
-      // 尝试判断是否为Base64编码的订阅
-      try {
-        // 检查是否是Base64编码（没有协议前缀的情况）
-        if (!subscriptionData.includes('://') && subscriptionData.length > 20) {
-          // 尝试使用标准atob，如果失败则使用UTF-8安全解码
-          let decodedData
+      // 处理每一行输入
+      for (const subUrl of subscriptionUrls) {
+        // 跳过空行
+        if (!subUrl.trim()) continue
+        
+        let subscriptionData = ''
+        
+        // 判断输入类型：是URL还是直接的代理链接
+        if (subUrl.startsWith('http://') || subUrl.startsWith('https://')) {
+          // 是订阅链接URL，需要fetch获取内容
           try {
-            decodedData = atob(subscriptionData.trim())
-          } catch (e) {
-            decodedData = base64ToUtf8(subscriptionData.trim())
+            const response = await fetch(subUrl.trim())
+            subscriptionData = await response.text()
+          } catch (fetchError) {
+            console.error('获取订阅内容失败:', fetchError.message, '订阅链接:', subUrl)
+            // 继续处理其他链接，不中断整个流程
+            continue
           }
-          servers = decodedData.split('\n').filter(line => line.trim())
+        } else if (subUrl.includes('://')) {
+          // 直接是代理链接内容（包含协议前缀）
+          subscriptionData = subUrl
         } else {
-          // 直接是多行代理链接格式
+          // 可能是Base64编码的内容
+          subscriptionData = subUrl
+        }
+        
+        // 智能处理订阅格式
+        let servers = []
+        
+        // 尝试判断是否为Base64编码的订阅
+        try {
+          // 检查是否是Base64编码（没有协议前缀的情况）
+          if (!subscriptionData.includes('://') && subscriptionData.length > 20) {
+            // 尝试使用标准atob，如果失败则使用UTF-8安全解码
+            let decodedData
+            try {
+              decodedData = atob(subscriptionData.trim())
+            } catch (e) {
+              decodedData = base64ToUtf8(subscriptionData.trim())
+            }
+            servers = decodedData.split('\n').filter(line => line.trim())
+          } else {
+            // 直接是多行代理链接格式
+            servers = subscriptionData.split('\n').filter(line => line.trim())
+          }
+        } catch (e) {
+          // Base64解码失败，按普通文本处理
           servers = subscriptionData.split('\n').filter(line => line.trim())
         }
-      } catch (e) {
-        // Base64解码失败，按普通文本处理
-        servers = subscriptionData.split('\n').filter(line => line.trim())
+        
+        // 将此行的服务器添加到总列表
+        allServers = [...allServers, ...servers]
+      }
+      
+      // 确保至少有一个节点
+      if (allServers.length === 0) {
+        return new Response(JSON.stringify({ 
+          error: '未找到有效的代理节点，请检查订阅链接是否正确' 
+        }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        })
       }
       
       // 转换为Clash配置
-      const clashConfig = await convertToClash(servers, configName || 'My Clash Config')
+      const clashConfig = await convertToClash(allServers, configName || 'My Clash Config')
       const yamlContent = generateClashYAML(clashConfig)
       
+      // 生成短链接
+      const shortId = generateShortId()
+      // 存储到内存缓存
+      configCache[shortId] = yamlContent
+      
       // 生成订阅链接
+      const shortSubscriptionLink = `${url.origin}/c/${shortId}`
+      
+      // 同时保留原有的长链接，以保持向后兼容
       const encodedConfig = encodeURIComponent(utf8ToBase64(yamlContent))
       const subscriptionLink = `${url.origin}/clash/${encodedConfig}`
       const yamlDownloadLink = `${url.origin}/yaml/${encodedConfig}`
@@ -190,9 +283,11 @@ async function handleRequest(request) {
         success: true, 
         config: clashConfig,
         yaml: yamlContent,
-        subscriptionUrl: subscriptionLink,
+        subscriptionUrl: shortSubscriptionLink, // 使用短链接
+        shortUrl: shortSubscriptionLink,
+        longUrl: subscriptionLink,
         yamlUrl: yamlDownloadLink,
-        downloadUrl: `${subscriptionLink}?download=true`,
+        downloadUrl: `${shortSubscriptionLink}?download=true`,
         message: '配置转换成功！可以直接使用订阅链接导入Clash客户端'
       }), {
         headers: {
@@ -550,7 +645,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
             <form id="convertForm">
                 <div class="form-group">
                     <label for="subscriptionUrl">订阅链接</label>
-                    <input type="url" class="form-control" id="subscriptionUrl" placeholder="请输入您的订阅链接">
+                    <textarea class="form-control" id="subscriptionUrl" rows="6" placeholder="请输入您的订阅链接，支持多行输入，每行一个链接"></textarea>
                 </div>
                 <div class="form-group">
                     <label for="configName">配置名称（可选）</label>
@@ -588,6 +683,13 @@ const HTML_CONTENT = `<!DOCTYPE html>
                         <h3>✅ 转换成功！</h3>
                         <p>配置名称: \${result.config.name}</p>
                         <p>节点数量: \${result.config.proxies.length}</p>
+                        
+                        <div style="margin: 15px 0; padding: 10px; background: #f0f8ff; border-radius: 8px; border-left: 4px solid #007bff;">
+                            <h4>📎 订阅链接 (可直接导入Clash)：</h4>
+                            <input class="form-control" style="margin: 10px 0" value="\${result.subscriptionUrl}" readonly>
+                            <button class="btn" style="background: #007bff" onclick="copyToClipboard('\${result.subscriptionUrl}')">📋 复制订阅链接</button>
+                        </div>
+                        
                         <button class="btn copy-btn" onclick="copyToClipboard(\\\`\${result.yaml}\\\`)">📋 复制 YAML 配置</button>
                         <textarea class="form-control" style="margin-top: 10px;" readonly>\${result.yaml}</textarea>
                     \`, 'success');

@@ -226,7 +226,12 @@
                         <li><strong>Base64订阅</strong>：传统Base64编码格式</li>
                     </ul>
                     <p style="margin-top: 10px; font-size: 14px; color: #666;">
-                        💡 <strong>使用提示</strong>：可以直接在上方文本框中粘贴多行代理链接，每行一个节点
+                        💡 <strong>使用提示</strong>：
+                        <ul>
+                            <li>可以直接在上方文本框中粘贴多行代理链接，每行一个节点</li>
+                            <li>可以输入多行订阅链接，每行一个链接，系统会自动合并所有节点</li>
+                            <li>支持混合输入（同时输入多个订阅链接和代理链接）</li>
+                        </ul>
                     </p>
                 </div>
 
@@ -235,7 +240,9 @@
                         <label for="subscriptionUrl">订阅链接或代理链接</label>
                         <textarea class="form-control" id="subscriptionUrl" rows="6"
                                placeholder="支持以下格式：
-1. HTTP/HTTPS 订阅链接：https://example.com/subscribe
+1. HTTP/HTTPS 订阅链接，可输入多行（每行一个）：
+   https://example1.com/subscribe
+   https://example2.com/subscribe
 2. 直接粘贴代理链接（每行一个）：
    ss://YWVzLTEyOC1nY206...@server:port#节点名
    vmess://eyJ2IjoiMiIs...
