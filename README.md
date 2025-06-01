@@ -5,7 +5,7 @@
 ## ✨ 功能特性
 
 - 🎨 **美观的现代化界面** - 采用渐变背景和卡片式设计
-- 🔄 **多协议支持** - 支持 V2Ray、Shadowsocks、Trojan 等主流协议
+- 🔄 **多协议支持** - 支持 V2Ray、VLESS、Shadowsocks、Trojan 等主流协议
 - ☁️ **云端部署** - 通过 Cloudflare Workers 实现全球CDN加速
 - 📱 **响应式设计** - 完美适配桌面端和移动端
 - ⚡ **快速转换** - 实时将订阅链接转换为 Clash 配置
@@ -123,6 +123,7 @@ npm run deploy:pages
 
 ### 支持的协议格式
 - **VMess** - V2Ray 标准协议
+- **VLESS** - V2Ray 轻量协议（支持Reality）
 - **Shadowsocks** - 经典代理协议
 - **Trojan** - 新兴的代理协议
 
@@ -258,6 +259,10 @@ rules: [
 5. 开启 Pull Request
 
 ## 📝 更新日志
+
+### v1.1.0
+- ✅ 新增VLESS协议支持（包括Reality安全传输）
+- ✅ 改进协议兼容性
 
 ### v1.0.0
 - ✅ 基础订阅转换功能

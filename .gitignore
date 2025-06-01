@@ -1,0 +1,21 @@
+# 依赖目录
+node_modules/
+.wrangler/
+
+# 环境变量
+.env
+.dev.vars
+
+# 编辑器和IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 日志文件
+*.log
+npm-debug.log*
+
+# 操作系统文件
+.DS_Store
+Thumbs.db 

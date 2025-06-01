@@ -234,9 +234,7 @@ async function convertToClash(servers, configName) {
       } else if (server.startsWith('trojan://')) {
         proxy = parseTrojan(server)
       } else if (server.startsWith('vless://')) {
-        // 暂时跳过不支持的协议
-        console.log('暂不支持VLESS协议:', server.substring(0, 50) + '...')
-        continue
+        proxy = parseVless(server)
       } else {
         console.log('未识别的协议:', server.substring(0, 50) + '...')
         continue
@@ -391,6 +389,78 @@ function parseTrojan(trojanUrl) {
   }
 }
 
+function parseVless(vlessUrl) {
+  try {
+    const url = new URL(vlessUrl)
+    const params = url.searchParams
+    
+    // 解析基本参数
+    const server = url.hostname
+    const port = parseInt(url.port)
+    const uuid = url.username
+    
+    // 解析VLESS特有参数
+    const encryption = params.get('encryption') || 'none'
+    const type = params.get('type') || 'tcp'
+    const security = params.get('security') || 'none'
+    
+    // 构建Clash配置
+    const vlessConfig = {
+      name: decodeURIComponent(url.hash.slice(1)) || `${server}:${port}`,
+      type: 'vless',
+      server: server,
+      port: port,
+      uuid: uuid,
+      network: type,
+      tls: security === 'tls' || security === 'reality',
+      udp: true
+    }
+    
+    // 添加TLS相关参数
+    if (vlessConfig.tls) {
+      vlessConfig['skip-cert-verify'] = true
+      vlessConfig.servername = params.get('sni') || server
+    }
+    
+    // 添加Reality相关参数
+    if (security === 'reality') {
+      vlessConfig.reality = true
+      vlessConfig['reality-opts'] = {
+        'public-key': params.get('pbk') || '',
+        'short-id': params.get('sid') || ''
+      }
+      if (params.get('fp')) {
+        vlessConfig.fingerprint = params.get('fp')
+      }
+    }
+    
+    // 添加传输方式特有参数
+    if (type === 'ws') {
+      vlessConfig['ws-opts'] = {
+        path: params.get('path') || '/',
+        headers: {}
+      }
+      if (params.get('host')) {
+        vlessConfig['ws-opts'].headers.Host = params.get('host')
+      }
+    } else if (type === 'grpc') {
+      vlessConfig['grpc-opts'] = {
+        'grpc-service-name': params.get('serviceName') || ''
+      }
+    } else if (type === 'h2') {
+      vlessConfig['h2-opts'] = {
+        host: [params.get('host') || server],
+        path: params.get('path') || '/'
+      }
+    }
+    
+    return vlessConfig
+  } catch (error) {
+    console.error('解析VLESS链接失败:', error)
+    return null
+  }
+}
+
 function generateClashYAML(config) {
   const yaml = `# Clash 配置文件
 # 配置名称: ${config.name}
@@ -471,6 +541,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
                 <h3>📋 支持的订阅类型</h3>
                 <ul>
                     <li>V2Ray 订阅链接</li>
+                    <li>VLESS 订阅链接</li>
                     <li>Shadowsocks 订阅链接</li>
                     <li>Trojan 订阅链接</li>
                     <li>Mixed 混合订阅</li>
