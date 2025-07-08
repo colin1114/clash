@@ -1,6 +1,7 @@
-![image](https://github.com/user-attachments/assets/b6b4e1f7-c039-41fb-acbe-4d102eeb941a)
+CDN acceleration and security protection for this project are sponsored by Tencent EdgeOne.
 
-https://dartnode.com/open-source
+[![image](https://github.com/user-attachments/assets/059fed87-d415-41b0-a575-2423bf2d77e2)](https://edgeone.ai/?from=github)
+
 
 
 # 🚀 Clash 订阅转换器
