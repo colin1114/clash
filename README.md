@@ -2,7 +2,7 @@ CDN acceleration and security protection for this project are sponsored by Tence
 
 [![image](https://github.com/user-attachments/assets/059fed87-d415-41b0-a575-2423bf2d77e2)](https://edgeone.ai/?from=github)
 
-
+The author of this project is colin1114.
 
 # 🚀 Clash 订阅转换器
 
